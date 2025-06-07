@@ -1,5 +1,4 @@
 azure-functions
-requests
 python-dotenv
 python-dateutil
 openai
