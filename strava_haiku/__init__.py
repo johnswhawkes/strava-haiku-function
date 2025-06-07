@@ -1,6 +1,8 @@
 import os
-import requests
+import json
 import datetime
+import http.client
+import urllib.parse
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 
@@ -10,18 +12,29 @@ def main(timer):
     print("Running Strava Haiku Function...")
 
     # Refresh Strava token
-    refresh_resp = requests.post("https://www.strava.com/api/v3/oauth/token", data={
+    data = urllib.parse.urlencode({
         "client_id": os.environ["STRAVA_CLIENT_ID"],
         "client_secret": os.environ["STRAVA_CLIENT_SECRET"],
         "grant_type": "refresh_token",
         "refresh_token": os.environ["STRAVA_REFRESH_TOKEN"]
-    }).json()
+    })
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    conn = http.client.HTTPSConnection("www.strava.com")
+    conn.request("POST", "/api/v3/oauth/token", data, headers)
+    response = conn.getresponse()
+    refresh_resp = json.loads(response.read())
     access_token = refresh_resp["access_token"]
+    conn.close()
     print("Token refreshed")
 
     # Get recent activities
     headers = {"Authorization": f"Bearer {access_token}"}
-    activities = requests.get("https://www.strava.com/api/v3/athlete/activities", headers=headers).json()
+    conn = http.client.HTTPSConnection("www.strava.com")
+    conn.request("GET", "/api/v3/athlete/activities", headers=headers)
+    response = conn.getresponse()
+    activities = json.loads(response.read())
+    conn.close()
+
     if not activities:
         print("No activities found.")
         return
@@ -66,13 +79,20 @@ def main(timer):
         print(f"\nGenerated haiku for activity {activity_id}:\n{haiku}\n")
 
         # Update activity
-        update_url = f"https://www.strava.com/api/v3/activities/{activity_id}"
-        update_resp = requests.put(update_url, headers=headers, json={"description": haiku})
+        update_body = json.dumps({"description": haiku})
+        update_headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+        conn = http.client.HTTPSConnection("www.strava.com")
+        conn.request("PUT", f"/api/v3/activities/{activity_id}", update_body, update_headers)
+        update_resp = conn.getresponse()
 
-        if update_resp.status_code == 200:
+        if update_resp.status == 200:
             print(f"Updated activity {activity_id} successfully.")
         else:
-            print(f"Failed to update activity {activity_id}:", update_resp.text)
+            print(f"Failed to update activity {activity_id}:", update_resp.read().decode())
+        conn.close()
 
 def zodiac_influence(month, day):
     tones = [
