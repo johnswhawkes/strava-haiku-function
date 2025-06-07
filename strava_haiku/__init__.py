@@ -1,16 +1,9 @@
-<<<<<<< HEAD
 import os
 import json
 import datetime
 import http.client
 import urllib.parse
 from openai import AzureOpenAI
-=======
-import datetime
-import os
-import requests
-import openai
->>>>>>> 8cd385d (Initial commit)
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -18,31 +11,6 @@ load_dotenv()
 def main(timer):
     print("Running Strava Haiku Function...")
 
-<<<<<<< HEAD
-    # Refresh Strava token
-    data = urllib.parse.urlencode({
-        "client_id": os.environ["STRAVA_CLIENT_ID"],
-        "client_secret": os.environ["STRAVA_CLIENT_SECRET"],
-        "grant_type": "refresh_token",
-        "refresh_token": os.environ["STRAVA_REFRESH_TOKEN"]
-    })
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    conn = http.client.HTTPSConnection("www.strava.com")
-    conn.request("POST", "/api/v3/oauth/token", data, headers)
-    response = conn.getresponse()
-    refresh_resp = json.loads(response.read())
-    access_token = refresh_resp["access_token"]
-    conn.close()
-    print("Token refreshed")
-
-    # Get recent activities
-    headers = {"Authorization": f"Bearer {access_token}"}
-    conn = http.client.HTTPSConnection("www.strava.com")
-    conn.request("GET", "/api/v3/athlete/activities", headers=headers)
-    response = conn.getresponse()
-    activities = json.loads(response.read())
-    conn.close()
-=======
     # Step 1: Refresh token if needed
     refresh_token = os.environ["STRAVA_REFRESH_TOKEN"]
     client_id = os.environ["STRAVA_CLIENT_ID"]
@@ -61,13 +29,11 @@ def main(timer):
     # Step 2: Get latest activity
     headers = {"Authorization": f"Bearer {access_token}"}
     activities = requests.get("https://www.strava.com/api/v3/athlete/activities", headers=headers).json()
->>>>>>> 8cd385d (Initial commit)
 
     if not activities:
         print("No activities found.")
         return
 
-<<<<<<< HEAD
     for act in activities:
         if act.get("description"):
             continue
@@ -143,50 +109,6 @@ def zodiac_influence(month, day):
             return tone
     return "a stoic, time-worn tone — patient and enduring"
 
-=======
-    latest = activities[0]
-    if latest.get("description"):
-        print("Activity already has description. Skipping.")
-        return
-
-    # Step 3: Prepare prompt
-    distance_km = round(latest["distance"] / 1000, 1)
-    date = latest["start_date_local"].split("T")[0]
-    time = latest["start_date_local"].split("T")[1][:5]
-    location = latest.get("location_city", "an unknown place")
-    activity_type = latest["type"].lower()
-
-    prompt = (
-        f"Write a haiku about a {distance_km}km {activity_type} in {location} on {date} at {time}. "
-        "Use natural or atmospheric imagery. Make it poetic, not modern or jokey. Stick to 5-7-5 syllable form."
-    )
-
-    # Step 4: Call Azure OpenAI
-    openai.api_key = os.environ["AZURE_OPENAI_KEY"]
-    openai.api_base = os.environ["AZURE_OPENAI_ENDPOINT"]
-    openai.api_type = "azure"
-    openai.api_version = "2023-05-15"  # Use the latest supported version
-
-    response = openai.ChatCompletion.create(
-        engine=os.environ["AZURE_OPENAI_DEPLOYMENT"],
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.8,
-        max_tokens=100
-    )
-
-    haiku = response["choices"][0]["message"]["content"].strip()
-    print("Generated haiku:\n", haiku)
-
-    # Step 5: Update Strava description
-    activity_id = latest["id"]
-    update_url = f"https://www.strava.com/api/v3/activities/{activity_id}"
-    update_resp = requests.put(update_url, headers=headers, json={"description": haiku})
-
-    if update_resp.status_code == 200:
-        print("Activity updated successfully.")
-    else:
-        print("Failed to update activity:", update_resp.text)
->>>>>>> 8cd385d (Initial commit)
 if __name__ == "__main__":
     class DummyTimer:
         pass
