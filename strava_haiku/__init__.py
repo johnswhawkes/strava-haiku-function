@@ -19,7 +19,7 @@ def main(timer):
     access_token = refresh_resp["access_token"]
     print("Token refreshed")
 
-    # Get activities
+    # Get recent activities
     headers = {"Authorization": f"Bearer {access_token}"}
     activities = requests.get("https://www.strava.com/api/v3/athlete/activities", headers=headers).json()
     if not activities:
@@ -37,15 +37,15 @@ def main(timer):
         location = act.get("location_city", "an unknown place")
         activity_type = act["type"].lower()
 
-        # Astrology tone
+        # Zodiac tone
         birthdate = datetime.datetime.fromisoformat(act["start_date_local"].replace("Z", "+00:00"))
-        month, day = birthdate.month, birthdate.day
-        sign = zodiac_sign(month, day)
+        tone_description = zodiac_influence(birthdate.month, birthdate.day)
 
         prompt = (
             f"Write a surreal, poetic haiku about a {distance_km}km {activity_type} in {location} "
-            f"on {date} at {time}. Use rich atmospheric imagery and tone it for the mood of {sign}. "
-            "Stick to 5-7-5 syllables. Don’t reference astrology directly."
+            f"on {date} at {time}. Include time of day and seasonal atmosphere. "
+            f"Use rich imagery. Let the tone be {tone_description}. "
+            "Stick strictly to 5-7-5 syllables. Never mention zodiac signs or horoscopes."
         )
 
         # Generate haiku
@@ -74,17 +74,25 @@ def main(timer):
         else:
             print(f"Failed to update activity {activity_id}:", update_resp.text)
 
-def zodiac_sign(month, day):
-    signs = [
-        (1, 20, "Capricorn"), (2, 19, "Aquarius"), (3, 20, "Pisces"),
-        (4, 20, "Aries"), (5, 21, "Taurus"), (6, 21, "Gemini"),
-        (7, 23, "Cancer"), (8, 23, "Leo"), (9, 23, "Virgo"),
-        (10, 23, "Libra"), (11, 22, "Scorpio"), (12, 22, "Sagittarius")
+def zodiac_influence(month, day):
+    tones = [
+        (1, 20, "a stoic, time-worn tone — patient and enduring"),
+        (2, 19, "a cool, distant tone — eccentric and windswept"),
+        (3, 20, "a dreamy, dissolving tone — drifting and melancholic"),
+        (4, 20, "a bold, impulsive tone — reckless and burning"),
+        (5, 21, "a calm, grounded tone — earthy and sensual"),
+        (6, 21, "a lively, flickering tone — curious and quick"),
+        (7, 23, "a nostalgic, lunar tone — gentle and emotionally vivid"),
+        (8, 23, "a radiant, regal tone — proud and sunlit"),
+        (9, 23, "a clean, precise tone — observant and restrained"),
+        (10, 23, "a cool, balanced tone — reflective and measured"),
+        (11, 22, "an intense, secretive tone — dark and magnetic"),
+        (12, 22, "an expansive, searching tone — mythic and restless"),
     ]
-    for m, d, sign in reversed(signs):
+    for m, d, tone in reversed(tones):
         if (month, day) >= (m, d):
-            return sign
-    return "Capricorn"
+            return tone
+    return "a stoic, time-worn tone — patient and enduring"
 
 if __name__ == "__main__":
     class DummyTimer:
