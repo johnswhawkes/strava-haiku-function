@@ -11,24 +11,29 @@ load_dotenv()
 def main(timer):
     print("Running Strava Haiku Function...")
 
-    # Step 1: Refresh token if needed
-    refresh_token = os.environ["STRAVA_REFRESH_TOKEN"]
-    client_id = os.environ["STRAVA_CLIENT_ID"]
-    client_secret = os.environ["STRAVA_CLIENT_SECRET"]
-
-    refresh_resp = requests.post("https://www.strava.com/api/v3/oauth/token", data={
-        "client_id": client_id,
-        "client_secret": client_secret,
+    # Refresh token
+    data = urllib.parse.urlencode({
+        "client_id": os.environ["STRAVA_CLIENT_ID"],
+        "client_secret": os.environ["STRAVA_CLIENT_SECRET"],
         "grant_type": "refresh_token",
-        "refresh_token": refresh_token
-    }).json()
-
+        "refresh_token": os.environ["STRAVA_REFRESH_TOKEN"]
+    })
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    conn = http.client.HTTPSConnection("www.strava.com")
+    conn.request("POST", "/api/v3/oauth/token", data, headers)
+    response = conn.getresponse()
+    refresh_resp = json.loads(response.read())
     access_token = refresh_resp["access_token"]
+    conn.close()
     print("Token refreshed")
 
-    # Step 2: Get latest activity
+    # Get activities
     headers = {"Authorization": f"Bearer {access_token}"}
-    activities = requests.get("https://www.strava.com/api/v3/athlete/activities", headers=headers).json()
+    conn = http.client.HTTPSConnection("www.strava.com")
+    conn.request("GET", "/api/v3/athlete/activities", headers=headers)
+    response = conn.getresponse()
+    activities = json.loads(response.read())
+    conn.close()
 
     if not activities:
         print("No activities found.")
@@ -45,7 +50,6 @@ def main(timer):
         location = act.get("location_city", "an unknown place")
         activity_type = act["type"].lower()
 
-        # Zodiac tone
         birthdate = datetime.datetime.fromisoformat(act["start_date_local"].replace("Z", "+00:00"))
         tone_description = zodiac_influence(birthdate.month, birthdate.day)
 
@@ -56,7 +60,6 @@ def main(timer):
             "Stick strictly to 5-7-5 syllables. Never mention zodiac signs or horoscopes."
         )
 
-        # Generate haiku
         client = AzureOpenAI(
             api_key=os.environ["AZURE_OPENAI_KEY"],
             api_version="2023-05-15",
