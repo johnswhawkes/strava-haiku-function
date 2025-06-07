@@ -1,5 +1,5 @@
 azure-functions
-openai>=1.3.0
 requests
 python-dotenv
 python-dateutil
+openai
