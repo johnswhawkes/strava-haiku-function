@@ -1,6 +1,8 @@
-azure-functions
 openai
-requests
 python-dotenv
+syllapy
+astral
+requests
+pytz
+azure-functions
 python-dateutil
-
